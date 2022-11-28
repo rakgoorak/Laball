@@ -1,0 +1,44 @@
+#include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#define WIRE Wire
+Adafruit_SSD1306 OLED = Adafruit_SSD1306(128, 32, &WIRE);
+
+int buttonPin = D4;
+int ledPin =  D0;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  pinMode(buttonPin, INPUT);
+  OLED.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  OLED.setTextColor(WHITE);
+  OLED.setTextSize(2);
+  OLED.setCursor(0, 0);
+  OLED.println("LED OFF");
+  OLED.display();
+}
+void loop() {
+  OLED.clearDisplay();
+  while (digitalRead(buttonPin) == HIGH);
+  delay(150);
+  while (digitalRead(buttonPin) != HIGH) {
+    digitalWrite(ledPin, HIGH);
+    OLED.setTextColor(WHITE);
+    OLED.setTextSize(2);
+    OLED.setCursor(0, 0);
+    OLED.println("LED On");
+    OLED.display();
+  }
+  while (digitalRead(buttonPin) == HIGH);
+  delay(150);
+  while (digitalRead(buttonPin) != HIGH) {
+    digitalWrite(ledPin, LOW);
+    OLED.clearDisplay();
+    OLED.setTextColor(WHITE);
+    OLED.setTextSize(2);
+    OLED.setCursor(0, 0);
+    OLED.println("LED OFF");
+    OLED.display();
+  }
+}

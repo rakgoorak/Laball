@@ -1,0 +1,69 @@
+#include "DHT.h"
+#include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#define WIRE Wire
+Adafruit_SSD1306 OLED = Adafruit_SSD1306(128, 32, &WIRE);
+
+#define DHTPIN D5
+#define DHTTYPE DHT22
+#define led1 D0
+#define led2 D4
+float ADC = A0;
+DHT dht(DHTPIN, DHTTYPE);
+
+void setup() {
+  Serial.begin(9600);
+  dht.begin();
+  pinMode(led1, OUTPUT);
+  pinMode(led2, OUTPUT);
+  OLED.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  OLED.clearDisplay();
+}
+
+void loop() {
+  OLED.clearDisplay();
+  delay(2000);
+  float t = dht.readTemperature();
+  float h = dht.readHumidity();
+  if (isnan(t) || isnan(h)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+  if (t < 27) {
+    digitalWrite(led1, LOW);
+  }
+  else if (t >= 27) {
+    digitalWrite(led1 , HIGH);
+  }
+  if (h < 60) {
+    digitalWrite(led2 , LOW);
+  }
+  else if (h >= 60) {
+    digitalWrite(led2 , HIGH);
+  }
+  Serial.print("Temperature: ");
+  Serial.print(t);
+  Serial.print(" *C");
+  Serial.print("Humidity: ");
+  Serial.print(h);
+  Serial.print(" %\n");
+  Serial.print("ADC: ");
+  Serial.println(analogRead(ADC));
+  Serial.print(" V");
+
+  float adc = analogRead(ADC)/310.3;
+  
+  OLED.setTextColor(WHITE);
+  OLED.setCursor(0, 0);
+  OLED.setTextSize(1);
+  OLED.print(String("Temperature : ") + String(t) + " ");
+  OLED.write(247);
+  OLED.print("C");
+  OLED.setCursor(0, 10);
+  OLED.println(String("Humidity : ") + String(h) + " %");
+  OLED.setCursor(0, 20);
+  OLED.println(String("ADC : ") + String(adc) + " V");
+  OLED.display();
+}
