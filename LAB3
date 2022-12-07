@@ -1,0 +1,115 @@
+#include <ESP8266WiFi.h>
+
+const char* ssid = "RAK";
+const char* password = "12345678";
+
+WiFiServer server(80);
+
+String header;
+
+String output0State = "OFF";
+
+const int output0 = D0;
+
+void setup() {
+
+  Serial.begin(115200);
+
+  pinMode(output0, OUTPUT);
+  digitalWrite(output0, LOW);
+
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  server.begin();
+}
+
+
+void loop() {
+
+  WiFiClient client = server.available();
+
+  if (client) {
+    Serial.println("New Client.");
+    String currentLine = "";
+
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+        Serial.write(c); //
+        header += c;
+
+        if (c == '\n') {
+          if (currentLine.length() == 0) {
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-type:text/html");
+            client.println("Connection: close");
+            client.println();
+
+            if (header.indexOf("GET /0/on") >= 0) {
+              Serial.println("GPIO 0 on");
+              output0State = "ON";
+              digitalWrite(output0, HIGH);
+            } else if (header.indexOf("GET /0/off") >= 0) {
+              Serial.println("GPIO 0 off");
+              output0State = "OFF";
+              digitalWrite(output0, LOW);
+            }
+
+            client.println("<!DOCTYPE html><html>");
+            client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+            client.println("<link rel=\"icon\" href=\"data:,\">");
+
+            client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
+            client.println(".red{background-color: red; width: 150px; height: 150px; border-radius: 100%; margin: 0 auto;}");
+            client.println(".black{background-color: black; width: 150px; height: 150px; border-radius: 100%; margin: 0 auto;}");
+            client.println("</style></head>");
+
+
+
+            client.println("<body><h1>Digital Signal Communication</h1>");
+            if (output0State == "OFF"){
+            client.println("<div class=\"black\"></div>");
+            }else{
+              client.println("<div class=\"red\"></div>");
+            }
+            client.println("<p>LED - State " + output0State + "</p>");
+
+            if (output0State == "OFF") {
+              client.println("<a href=\"/0/on\"><button class=\"button\">LED ON</button></a>");
+              client.println("<a href=\"/0/off\"><button class=\"button\">LED OFF</button></a>");
+            }
+            if (output0State == "ON") {
+              client.println("<a href=\"/0/on\"><button class=\"button\">LED ON</button></a>");
+              client.println("<a href=\"/0/off\"><button class=\"button\">LED OFF</button></a>");
+            }
+            client.println("</body></html>");
+
+            client.println();
+
+            break;
+          } else {
+            currentLine = "";
+          }
+        } else if (c != '\r') {
+          currentLine += c;
+        }
+      }
+    }
+    header = "";
+
+    client.stop();
+    Serial.println("Client disconnected.");
+    Serial.println("");
+  }
+}
